@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JITBOXチャーター便料金　自動計算</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3350;
+    --accent: #4f8ef7;
+    --accent2: #7c5cfc;
+    --success: #3dd68c;
+    --warn: #f7c94f;
+    --text: #e8eaf6;
+    --muted: #7b82a8;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 16px 80px;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .logo-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    background: rgba(79,142,247,.10);
+    padding: 6px 14px;
+    border-radius: 100px;
+    border: 1px solid rgba(79,142,247,.25);
+  }
+  h1 {
+    font-size: clamp(24px, 5vw, 36px);
+    font-weight: 700;
+    background: linear-gradient(135deg, #fff 30%, var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.25;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 8px;
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    width: 100%;
+    max-width: 520px;
+  }
+  .card + .card { margin-top: 16px; }
+
+  /* Setup Banner */
+  #setup-banner {
+    background: linear-gradient(135deg, rgba(79,142,247,.15), rgba(124,92,252,.15));
+    border: 1px solid rgba(79,142,247,.3);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    max-width: 520px;
+    width: 100%;
+    margin-bottom: 16px;
+  }
+  #setup-banner h3 { font-size: 14px; color: var(--accent); margin-bottom: 8px; }
+  #setup-banner input {
+    width: 100%;
+    background: rgba(0,0,0,.3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    margin-top: 8px;
+  }
+  #setup-banner input:focus { outline: none; border-color: var(--accent); }
+
+  /* Form */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+
+  /* 発地固定バッジ */
+  .origin-fixed {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .origin-fixed .badge {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent);
+    background: rgba(79,142,247,.12);
+    border: 1px solid rgba(79,142,247,.25);
+    border-radius: 6px;
+    padding: 2px 8px;
+    letter-spacing: .05em;
+  }
+  label { font-size: 12px; color: var(--muted); font-weight: 500; letter-spacing: .05em; }
+  select, input[type="number"] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: 'Noto Sans JP', sans-serif;
+    appearance: none;
+    transition: border-color .2s;
+    width: 100%;
+  }
+  select:focus, input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79,142,247,.15);
+  }
+  select option { background: #1a1d27; }
+
+  /* Button */
+  .btn {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    transition: all .2s;
+    margin-top: 20px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    letter-spacing: .05em;
+  }
+  .btn:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(79,142,247,.3); }
+  .btn:active { transform: translateY(0); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+  .btn-clear {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    transition: all .2s;
+    margin-top: 14px;
+    background: transparent;
+    color: var(--muted);
+    letter-spacing: .05em;
+  }
+  .btn-clear:hover { background: var(--surface2); color: var(--text); border-color: var(--muted); }
+
+  /* Result */
+  #result-card { display: none; }
+  #result-card.show { display: block; }
+
+  .result-header {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .result-header::before {
+    content: '';
+    display: block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    box-shadow: 0 0 8px var(--success);
+  }
+
+  .route-display {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 14px 16px;
+    background: var(--surface2);
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .route-sep { color: var(--accent); font-size: 20px; flex-shrink: 0; }
+
+  .breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+  }
+  .breakdown-row .label { color: var(--muted); }
+  .breakdown-row .value { font-family: 'DM Mono', monospace; }
+  .breakdown-row.packing .value { color: var(--accent); }
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+  }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 16px 18px;
+    background: linear-gradient(135deg, rgba(79,142,247,.1), rgba(124,92,252,.1));
+    border: 1px solid rgba(79,142,247,.2);
+    border-radius: 10px;
+  }
+  .total-label { font-size: 13px; color: var(--muted); }
+  .total-amount {
+    font-family: 'DM Mono', monospace;
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--success);
+  }
+
+  /* Spinner */
+  .spinner {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Error */
+  .error-box {
+    background: rgba(239,68,68,.1);
+    border: 1px solid rgba(239,68,68,.3);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-size: 14px;
+    color: #f87171;
+    margin-top: 12px;
+    display: none;
+  }
+  .error-box.show { display: block; }
+
+  /* Load btn */
+  .load-btn {
+    margin-top: 10px;
+    padding: 8px 16px;
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--accent);
+    font-size: 13px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .load-btn:hover { background: rgba(79,142,247,.1); }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title span {
+    background: var(--surface2);
+    padding: 2px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+
+  @media (max-width: 480px) {
+    .card { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">🚚 JITBOX Charter</div>
+  <h1>JITBOXチャーター便料金　自動計算</h1>
+  <p class="subtitle">スプレッドシートのマスタデータから自動で料金を算出</p>
+</header>
+
+<!-- GAS URL設定バナー -->
+<div id="setup-banner">
+  <h3>⚙️ 初回設定：Google Apps Script の URL を入力</h3>
+  <p style="font-size:13px; color: var(--muted);">GASをデプロイして発行されたURLを貼り付けてください</p>
+  <input type="url" id="gas-url-input" placeholder="https://script.google.com/macros/s/xxxxx/exec" />
+  <button class="load-btn" onclick="loadMaster()">マスタデータを読み込む</button>
+</div>
+
+<!-- メインフォーム -->
+<div class="card">
+  <div class="section-title">計算条件の入力 <span>スプレッドシートのデータが反映されます</span></div>
+
+  <div class="form-grid">
+    <div class="form-group">
+      <label>発地（FROM）</label>
+      <div class="origin-fixed">
+        <span>愛知県</span>
+        <span class="badge">固定</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>着地エリア（TO）</label>
+      <select id="destination">
+        <option value="">-- マスタを読み込んでください --</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>個数（口数）</label>
+      <input type="number" id="quantity" value="1" min="1" max="9999" />
+    </div>
+  </div>
+
+  <div class="error-box" id="error-box"></div>
+  <button class="btn" id="calc-btn" onclick="calculate()" disabled>計算する</button>
+</div>
+
+<!-- 結果カード -->
+<div class="card" id="result-card">
+  <div class="result-header">計算結果</div>
+
+  <div class="route-display">
+    <span id="res-origin">-</span>
+    <span class="route-sep">✈</span>
+    <span id="res-dest">-</span>
+  </div>
+
+  <div class="breakdown">
+    <div class="breakdown-row">
+      <span class="label">輸送費（1個あたり）</span>
+      <span class="value" id="res-base">-</span>
+    </div>
+    <div class="breakdown-row">
+      <span class="label">個数</span>
+      <span class="value" id="res-qty">-</span>
+    </div>
+    <div class="breakdown-row">
+      <span class="label">輸送費小計</span>
+      <span class="value" id="res-transport-total">-</span>
+    </div>
+    <div class="divider"></div>
+    <div class="breakdown-row packing">
+      <span class="label" id="res-packing-label">梱包費</span>
+      <span class="value" id="res-packing-total">-</span>
+    </div>
+  </div>
+
+  <div class="total-row">
+    <span class="total-label">合計（輸送費 ＋ 梱包費）税抜</span>
+    <span class="total-amount" id="res-total">-</span>
+  </div>
+  <button class="btn-clear" onclick="clearResult()">🔄 クリアして再計算</button>
+</div>
+
+<script>
+  // ========================================
+  // ★ GAS URL（保存・読み込み）
+  // ========================================
+  const GAS_URL_KEY = 'transport_gas_url';
+  let masterData = null;
+
+  // 起動時にLocalStorageからURL復元
+  window.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem(GAS_URL_KEY);
+    if (saved) {
+      document.getElementById('gas-url-input').value = saved;
+    }
+  });
+
+  async function loadMaster() {
+    const url = document.getElementById('gas-url-input').value.trim();
+    if (!url) { showError('URLを入力してください'); return; }
+
+    localStorage.setItem(GAS_URL_KEY, url);
+    showError('');
+
+    const btn = document.querySelector('.load-btn');
+    btn.disabled = true;
+    btn.textContent = '読み込み中...';
+
+    try {
+      const res = await fetch(`${url}?action=getMaster`);
+      const data = await res.json();
+
+      if (data.error) throw new Error(data.error);
+
+      masterData = data;
+      populateSelects(data);
+      document.getElementById('calc-btn').disabled = false;
+      btn.textContent = '✓ 読み込み完了';
+      btn.style.borderColor = 'var(--success)';
+      btn.style.color = 'var(--success)';
+    } catch (e) {
+      showError('マスタの読み込みに失敗しました: ' + e.message);
+      btn.textContent = 'マスタデータを読み込む';
+      btn.disabled = false;
+    }
+  }
+
+  // 発地は愛知県で固定
+  const FIXED_ORIGIN = '愛知県';
+
+  function populateSelects(data) {
+    const destSel = document.getElementById('destination');
+    destSel.innerHTML = '<option value="">着地を選択してください</option>';
+    data.destinations.forEach(d => {
+      destSel.innerHTML += `<option value="${d}">${d}</option>`;
+    });
+  }
+
+  async function calculate() {
+    const origin = FIXED_ORIGIN;
+    const destination = document.getElementById('destination').value;
+    const quantity = document.getElementById('quantity').value;
+
+    showError('');
+    if (!destination) { showError('着地エリアを選択してください'); return; }
+    if (!quantity || quantity < 1) { showError('個数を入力してください'); return; }
+
+    const gasUrl = localStorage.getItem(GAS_URL_KEY);
+    const btn = document.getElementById('calc-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>計算中...';
+
+    try {
+      const res = await fetch(`${gasUrl}?action=calculate&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&quantity=${quantity}`);
+      const data = await res.json();
+
+      if (data.error) throw new Error(data.error);
+      renderResult(data);
+    } catch (e) {
+      showError('計算に失敗しました: ' + e.message);
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = '計算する';
+  }
+
+  function renderResult(d) {
+    const fmt = n => '¥' + Number(n).toLocaleString();
+
+    document.getElementById('res-origin').textContent = d.origin;
+    document.getElementById('res-dest').textContent = d.destination;
+    document.getElementById('res-base').textContent = fmt(d.baseFee);
+    document.getElementById('res-qty').textContent = d.quantity + ' 個';
+    document.getElementById('res-packing-label').textContent = `梱包費（${fmt(d.packingFeePerUnit)} × カゴ数）`;
+    document.getElementById('res-transport-total').textContent = fmt(d.transportTotal);
+    document.getElementById('res-packing-total').textContent = fmt(d.packingTotal);
+    document.getElementById('res-total').textContent = fmt(d.total);
+
+    const card = document.getElementById('result-card');
+    card.classList.add('show');
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function clearResult() {
+    // 結果カードを非表示
+    const card = document.getElementById('result-card');
+    card.classList.remove('show');
+
+    // フォームをリセット
+    document.getElementById('destination').value = '';
+    document.getElementById('quantity').value = '1';
+
+    // エラーもクリア
+    showError('');
+
+    // 着地選択欄にフォーカス
+    document.getElementById('destination').focus();
+
+    // 画面トップへスクロール
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function showError(msg) {
+    const box = document.getElementById('error-box');
+    box.textContent = msg;
+    box.classList.toggle('show', !!msg);
+  }
+</script>
+</body>
+</html>
